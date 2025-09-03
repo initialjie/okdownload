@@ -77,11 +77,13 @@ public class MultiPointOutputStream {
     volatile Thread runSyncThread;
     final SparseArray<Thread> parkedRunBlockThreadMap = new SparseArray<>();
 
-    @NonNull private final Runnable syncRunnable;
+    @NonNull
+    private final Runnable syncRunnable;
     private String path;
 
     IOException syncException;
-    @NonNull ArrayList<Integer> noMoreStreamList;
+    @NonNull
+    ArrayList<Integer> noMoreStreamList;
 
     @SuppressFBWarnings("IS2_INCONSISTENT_SYNC")
     List<Integer> requireStreamBlocks;
@@ -141,7 +143,8 @@ public class MultiPointOutputStream {
 
     public void cancelAsync() {
         FILE_IO_EXECUTOR.execute(new Runnable() {
-            @Override public void run() {
+            @Override
+            public void run() {
                 cancel();
             }
         });
@@ -280,7 +283,11 @@ public class MultiPointOutputStream {
         final DownloadOutputStream outputStream = outputStreamMap.get(blockIndex);
         if (outputStream != null) {
             outputStream.close();
-            outputStreamMap.remove(blockIndex);
+            synchronized (noSyncLengthMap) {
+                // make sure the length of noSyncLengthMap is equal to outputStreamMap
+                outputStreamMap.remove(blockIndex);
+                noSyncLengthMap.remove(blockIndex);
+            }
             Util.d(TAG, "OutputStream close task[" + task.getId() + "] block[" + blockIndex + "]");
         }
     }
@@ -307,8 +314,7 @@ public class MultiPointOutputStream {
     void inspectStreamState(StreamsState state) {
         state.newNoMoreStreamBlockList.clear();
 
-        @SuppressWarnings("unchecked")
-        final List<Integer> clonedList = (List<Integer>) noMoreStreamList.clone();
+        @SuppressWarnings("unchecked") final List<Integer> clonedList = (List<Integer>) noMoreStreamList.clone();
         final Set<Integer> uniqueBlockList = new HashSet<>(clonedList);
         final int noMoreStreamBlockCount = uniqueBlockList.size();
         if (noMoreStreamBlockCount != requireStreamBlocks.size()) {
@@ -470,7 +476,7 @@ public class MultiPointOutputStream {
                 }
             }
             success = true;
-        } catch (IOException ex) {
+        } catch (Throwable ex) {
             Util.w(TAG, "OutputStream flush and sync data to filesystem failed " + ex);
             success = false;
         }
