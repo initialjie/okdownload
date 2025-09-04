@@ -245,7 +245,7 @@ public class DownloadChain implements Runnable {
 
         try {
             start();
-        } catch (IOException ignored) {
+        } catch (Throwable ignored) {
             // interrupt.
         } finally {
             finished.set(true);
